@@ -6,7 +6,6 @@
 #include "readmapper.hpp"
 
 #include "buffer.hpp"
-#include "sequence.hpp"
 #include "fastareader.hpp"
 #include "sw.hpp"
 
@@ -51,30 +50,33 @@ int main(int argc, char* argv[])
         int seqs2_len[VSIZE];
         
         //containter for flags
-        Buffer<int8_t> flags(seq_len * seq_len * VSIZE, 64);
-        int16_t scores[VSIZE];
-        int16_t ipos[VSIZE];
-        int16_t jpos[VSIZE];
+        Buffer<int16_t> flags(seq_len * seq_len * VSIZE, 64);
+        int16_t __attribute((aligned(ALNSIZE))) scores[VSIZE];
+        int16_t __attribute((aligned(ALNSIZE))) ipos[VSIZE];
+        int16_t __attribute((aligned(ALNSIZE))) jpos[VSIZE];
         bool more_seqs = true;
+        
+        //max sizes
+        int x, y;
         
         //read one batch
         #pragma omp critical
-        more_seqs = reader1.next(&seqs1) && reader2.next(&seqs2);
+        more_seqs = reader1.next(&seqs1, seqs1_len) && reader2.next(&seqs2, seqs2_len);
         
         do
         { 
-            //int x = reader1.getSequence().size();
-            //int y = reader2.getSequence().size();
+            x = *std::max_element(seqs1_len, seqs1_len + VSIZE);
+            y = *std::max_element(seqs2_len, seqs2_len + VSIZE);
             
             smith_waterman(seqs1.data(), seqs2.data(), match, mismatch, gap_open, gap_extend, 
-                           flags.data(), scores, ipos, jpos);
+                           flags.data(), scores, ipos, jpos, x, y);
             //alignment.print();
             
-            for(int i =0; i< VSIZE; i++)
-                std::cout << scores[i] << std::endl;
+            /*for(int i =0; i< VSIZE; i++)
+                std::cout << "x: " << x << ", y: " << y << std::endl;*/
             
             #pragma omp critical
-            more_seqs = reader1.next(&seqs1) && reader2.next(&seqs2);
+            more_seqs = reader1.next(&seqs1, seqs1_len) && reader2.next(&seqs2, seqs2_len);
         }
         while(more_seqs);
     }

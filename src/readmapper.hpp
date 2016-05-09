@@ -1,6 +1,6 @@
 #pragma once
 
-#define VSIZE 16
+#define VSIZE 64
 
-#define ALNSIZE 32
+#define ALNSIZE 16
 

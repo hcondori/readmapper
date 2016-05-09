@@ -1,5 +1,7 @@
 #pragma once
 
+#include <algorithm>
+
 template <class T>
 class Buffer
 {
@@ -33,7 +35,13 @@ public:
 
     int resize(int new_size)
     {
-        //TODO
+        //TODO: what if new size < old size ?
+        this->size_ = new_size;
+        T *temp = (T*)aligned_alloc(this->alignment_size_, new_size * sizeof(T));
+        std::copy_n(this->data_, this->size_, temp);
+        free(this->data_);
+        this->data_ = temp;
+        return 0;
     }
 
     ~Buffer()

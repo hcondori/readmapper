@@ -75,7 +75,7 @@ bool FASTAReader::acceptPrintableBut(char ch)
     return false;
 }
 
-bool FASTAReader::next(Buffer<int16_t> *seqs, int factor)
+bool FASTAReader::next(Buffer<int16_t> *seqs, int *seqs_len, int factor)
 {
     this->seqs = seqs;
     this->vector_size = seqs->size();
@@ -95,10 +95,11 @@ bool FASTAReader::next(Buffer<int16_t> *seqs, int factor)
         }
     }
     
+    std::copy_n(seq_sizes.data(), VSIZE, seqs_len);
     return status;
 }
 
-bool FASTAReader::next(Buffer<int16_t> *seqs)
+bool FASTAReader::next(Buffer<int16_t> *seqs, int *seqs_len)
 {
-    return this->next(seqs, 1);
+    return this->next(seqs, seqs_len, 1);
 }
