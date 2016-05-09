@@ -43,6 +43,11 @@ public:
         this->data_ = temp;
         return 0;
     }
+    
+    void clear()
+    {
+        std::fill_n(this->data_, this->size_, 0);
+    }
 
     ~Buffer()
     {

@@ -5,11 +5,24 @@
 
 #include "readmapper.hpp"
 
+#include "backtrack.hpp"
 #include "buffer.hpp"
 #include "fastareader.hpp"
 #include "sw.hpp"
 
-#define DEFAULT_SEQ_LEN 256
+
+/*
+* Wrapper for FASTAReader
+*/
+bool read_seqs(FASTAReader &reader1, FASTAReader &reader2, 
+                    Buffer<int16_t> *seqs1, Buffer<int16_t> *seqs2,
+                    int *seqs1_len, int *seqs2_len)
+{
+    bool ans;
+    #pragma omp critical
+    ans = reader1.next(seqs1, seqs1_len) && reader2.next(seqs2, seqs2_len);
+    return ans; 
+}
 
 int main(int argc, char* argv[])
 {
@@ -42,43 +55,48 @@ int main(int argc, char* argv[])
         int seq_len = DEFAULT_SEQ_LEN;
         
         //container vectors for sequences
-        Buffer<int16_t> seqs1(seq_len * VSIZE, 64);
-        Buffer<int16_t> seqs2(seq_len * VSIZE, 64);
+        Buffer<int16_t> seqs1(seq_len * VSIZE, ALNSIZE);
+        Buffer<int16_t> seqs2(seq_len * VSIZE, ALNSIZE);
         
         //legths of sequences
         int seqs1_len[VSIZE];
         int seqs2_len[VSIZE];
         
         //containter for flags
-        Buffer<int16_t> flags(seq_len * seq_len * VSIZE, 64);
+        Buffer<int16_t> flags(seq_len * seq_len * VSIZE, ALNSIZE);
         int16_t __attribute((aligned(ALNSIZE))) scores[VSIZE];
         int16_t __attribute((aligned(ALNSIZE))) ipos[VSIZE];
         int16_t __attribute((aligned(ALNSIZE))) jpos[VSIZE];
         bool more_seqs = true;
         
+        //alignments
+        char aln1[512];
+        char aln2[512];
+        
         //max sizes
         int x, y;
         
-        //read one batch
-        #pragma omp critical
-        more_seqs = reader1.next(&seqs1, seqs1_len) && reader2.next(&seqs2, seqs2_len);
+        //
+        int x0, y0;
         
-        do
-        { 
+        //read one batch
+        while(read_seqs(reader1, reader2, &seqs1, &seqs2, seqs1_len, seqs2_len))
+        {
+            std::cout << "Hola" << std::endl; 
             x = *std::max_element(seqs1_len, seqs1_len + VSIZE);
             y = *std::max_element(seqs2_len, seqs2_len + VSIZE);
             
             smith_waterman(seqs1.data(), seqs2.data(), match, mismatch, gap_open, gap_extend, 
                            flags.data(), scores, ipos, jpos, x, y);
-            //alignment.print();
             
-            /*for(int i =0; i< VSIZE; i++)
-                std::cout << "x: " << x << ", y: " << y << std::endl;*/
-            
-            #pragma omp critical
-            more_seqs = reader1.next(&seqs1, seqs1_len) && reader2.next(&seqs2, seqs2_len);
+            for(int i = 0; i < VSIZE; i++)
+            {
+                //sw_backtrack(i, flags.data(), seqs1.data(), seqs2.data(), x, y,
+                    //aln1, aln2, ipos[i], jpos[i], x0, y0);
+                
+            }
+            //std::cout << ipos[0] << std::endl;
         }
-        while(more_seqs);
     }
     return 0;
 }
