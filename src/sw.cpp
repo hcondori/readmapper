@@ -29,7 +29,7 @@
 void
 fill_table_16_to_16_i16(int16_t*  __restrict__ flags, int16_t*  __restrict__ seqs1, 
                         int16_t*  __restrict__ seqs2, int x, int y,
-                        int16_t match, int16_t mismatch, const int16_t gap_open,
+                        const int16_t match, const int16_t mismatch, const int16_t gap_open,
                         const int16_t gap_extend, int16_t*  __restrict__ scores,
                         int16_t*  __restrict__ ipos, int16_t*  __restrict__ jpos)
 {
@@ -81,6 +81,8 @@ fill_table_16_to_16_i16(int16_t*  __restrict__ flags, int16_t*  __restrict__ seq
 
     std::fill_n(flags, VSIZE * y, 0);
     std::fill_n(scores, VSIZE, 0);
+    std::fill_n(ipos, VSIZE, 0);
+    std::fill_n(jpos, VSIZE, 0);
     
     int16_t inf = gap_open + gap_extend + 1;
     //int16_t aF[y * VSIZE] __attribute((aligned(ALNSIZE))) = {(int16_t)(-inf)};
@@ -151,10 +153,10 @@ fill_table_16_to_16_i16(int16_t*  __restrict__ flags, int16_t*  __restrict__ seq
                 
                 //b_left
                 b_left[k] = ((H_eq_E[k] && !H_eq_F[k]) || H_eq_diag[k]) && H_gt_0[k];
-                flag[k] = b_left[k] & mask8;
+                flag[k] |= b_left[k] & mask8;
                 
-                ipos[k] = H_gt_scores[k]? 0 : i;
-                jpos[k] = H_gt_scores[k]? 0 : j;
+                ipos[k] = H_gt_scores[k]? i : ipos[k];
+                jpos[k] = H_gt_scores[k]? j : jpos[k];
                 scores[k] = std::max(H[k], scores[k]);
             }
             std::copy_n(F, VSIZE, aF + VSIZE * j);
@@ -166,9 +168,11 @@ fill_table_16_to_16_i16(int16_t*  __restrict__ flags, int16_t*  __restrict__ seq
 
 
 void smith_waterman(int16_t __restrict__ *seqs1, int16_t __restrict__  *seqs2, 
-                    int match, int mismatch, int gap_open, int gap_extend, 
-                    int16_t __restrict__ *flags, int16_t __restrict__  *scores, int16_t* 
-                    __restrict__ ipos, int16_t * __restrict__ jpos, int x, int y)
+                    const int16_t match, const int16_t mismatch, 
+                    const int16_t gap_open, const int gap_extend, 
+                    int16_t __restrict__ *flags, int16_t __restrict__  *scores, 
+                    int16_t* __restrict__ ipos, int16_t * __restrict__ jpos, 
+                    int x, int y)
 {
     fill_table_16_to_16_i16(flags, seqs1, seqs2, x, y,
                         match, mismatch, gap_open, gap_extend, scores,
