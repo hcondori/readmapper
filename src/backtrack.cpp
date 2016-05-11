@@ -17,8 +17,6 @@
  along with readmapper.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <iostream>
-
 #include "readmapper.hpp"
 
 #include "backtrack.hpp"
@@ -52,8 +50,6 @@ sw_backtrack (int index, int16_t* flags, int16_t* seqs1, int16_t* seqs2, int w, 
 
     while ((flags[(x * h + y) * VSIZE + index] & d_mask))
     {
-        std::cout << "x=" << x << ", y=" << y 
-            << ", flag=" << flags[(h*x + y)*VSIZE + index] << std::endl;
         if ((flags[(x * h + y) * VSIZE + index] & d_mask) == d_mask)
         {
             aln1[c] = seqs1[(--x) * VSIZE + index];

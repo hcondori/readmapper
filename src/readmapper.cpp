@@ -88,8 +88,8 @@ int main(int argc, char* argv[])
         int16_t __attribute((aligned(ALNSIZE))) jpos[VSIZE];
         
         //alignments
-        char aln1[128];
-        char aln2[128];
+        char aln1[256];
+        char aln2[256];
         
         //max sizes
         int max_x, max_y;
@@ -100,26 +100,19 @@ int main(int argc, char* argv[])
         //read one batch
         while(read_seqs(reader1, reader2, &seqs1, &seqs2, seqs1_len, seqs2_len))
         {
-            max_x = *std::max_element(seqs1_len, seqs1_len + VSIZE);
-            max_y = *std::max_element(seqs2_len, seqs2_len + VSIZE);
+            max_x = *std::max_element(seqs1_len, seqs1_len + VSIZE) + 1;
+            max_y = *std::max_element(seqs2_len, seqs2_len + VSIZE) + 1;
             std::cout << "max x=" << max_x << " , max y=" << max_y << std::endl;
 
             smith_waterman(seqs1.data(), seqs2.data(), match, mismatch, gap_open, gap_extend, 
-                           flags.data(), scores, ipos, jpos, max_x + 1, max_y + 1);
+                           flags.data(), scores, ipos, jpos, max_x, max_y);
             
             for(int i = 0; i < VSIZE; i++)
             {
-                sw_backtrack(i, flags.data(), seqs1.data(), seqs2.data(), max_x+1, max_y+1,
+                sw_backtrack(i, flags.data(), seqs1.data(), seqs2.data(), max_x, max_y,
                     aln1, aln2, ipos[i], jpos[i], x0, y0);
-                if(i==0)
-                {    
-                    std::cout << 
-                        "flag=" << flags[((ipos[i] - 4)*(max_y+1) + jpos[i]-4)*VSIZE] << std::endl;
-                    puts(aln1); puts(aln2);
-                    std::cout << "x=" << ipos[i] << " , y=" << jpos[i] << std::endl;
-                    std::cout << "x0=" << x0 << " , y0=" << y0 << std::endl;
-                }
-                
+                    puts(aln1);
+                    puts(aln2);
             }
             
         }
