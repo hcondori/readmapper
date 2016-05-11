@@ -3,18 +3,18 @@
 
  This file is part of readmapper, the massive Smith-Waterman pairwise sequence aligner.
 
- ALN is free software: you can redistribute it and/or modify
+ readmapper is free software: you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
  the Free Software Foundation, either version 3 of the License, or
  (at your option) any later version.
 
- ALN is distributed in the hope that it will be useful,
+ readmapper is distributed in the hope that it will be useful,
  but WITHOUT ANY WARRANTY; without even the implied warranty of
  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  GNU General Public License for more details.
 
  You should have received a copy of the GNU General Public License
- along with ALN.  If not, see <http://www.gnu.org/licenses/>.
+ along with readmapper.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include <algorithm>
@@ -27,16 +27,16 @@
  * Smith-Waterman with match/mismatch values
  */
 void
-fill_table_16_to_16_i16(int16_t*  __restrict__ flags, int16_t*  __restrict__ seqs1, 
-                        int16_t*  __restrict__ seqs2, int x, int y,
-                        const int16_t match, const int16_t mismatch, const int16_t gap_open,
-                        const int16_t gap_extend, int16_t*  __restrict__ scores,
-                        int16_t*  __restrict__ ipos, int16_t*  __restrict__ jpos)
+fill_table_i16(int16_t*  __restrict__ flags, int16_t*  __restrict__ seqs1, 
+               int16_t*  __restrict__ seqs2, const int x, const int y,
+               const int16_t match, const int16_t mismatch, const int16_t gap_open,
+               const int16_t gap_extend, int16_t*  __restrict__ scores,
+               int16_t*  __restrict__ ipos, int16_t*  __restrict__ jpos)
 {
-    const int16_t mask1 = 1;
-    const int16_t mask2 = 2;
-    const int16_t mask4 = 4;
-    const int16_t mask8 = 8;
+    const int16_t mask1 = 0B0000000000000001;
+    const int16_t mask2 = 0B0000000000000010;
+    const int16_t mask4 = 0B0000000000000100;
+    const int16_t mask8 = 0B0000000000001000;
 
     int16_t __attribute((aligned(ALNSIZE))) s1[VSIZE];
     int16_t __attribute((aligned(ALNSIZE))) s2[VSIZE];
@@ -64,20 +64,6 @@ fill_table_16_to_16_i16(int16_t*  __restrict__ flags, int16_t*  __restrict__ seq
     int16_t __attribute((aligned(ALNSIZE))) is_zero[VSIZE];
     int16_t __attribute((aligned(ALNSIZE))) are_equal[VSIZE];
     int16_t __attribute((aligned(ALNSIZE))) H_gt_scores[VSIZE];
-    
-    /*char __attribute((aligned(ALNSIZE))) c_up[VSIZE];
-    char __attribute((aligned(ALNSIZE))) c_left[VSIZE];
-    char __attribute((aligned(ALNSIZE))) b_up[VSIZE];
-    char __attribute((aligned(ALNSIZE))) b_left[VSIZE];
-    char __attribute((aligned(ALNSIZE))) H_gt_0[VSIZE];
-    char __attribute((aligned(ALNSIZE))) H_eq_diag[VSIZE];
-    char __attribute((aligned(ALNSIZE))) H_eq_E[VSIZE];
-    char __attribute((aligned(ALNSIZE))) H_eq_F[VSIZE];
-    char __attribute((aligned(ALNSIZE))) H_ne_E[VSIZE];
-    char __attribute((aligned(ALNSIZE))) flag[VSIZE];
-    char __attribute((aligned(ALNSIZE))) is_zero[VSIZE];
-    char __attribute((aligned(ALNSIZE))) are_equal[VSIZE];
-    char __attribute((aligned(ALNSIZE))) H_gt_scores[VSIZE];*/
 
     std::fill_n(flags, VSIZE * y, 0);
     std::fill_n(scores, VSIZE, 0);
@@ -110,16 +96,16 @@ fill_table_16_to_16_i16(int16_t*  __restrict__ flags, int16_t*  __restrict__ seq
             #pragma omp simd
             for(int k = 0; k < VSIZE; k++)
             {
-                is_zero[k] = s2[k] == 0;
-                is_zero[k] = s1[k] == 0 && is_zero[k];                
-                are_equal[k] = s1[k] == s2[k] && !is_zero[k];                               
+                is_zero[k] = (s2[k] == 0)? 0xFFFF : 0;
+                is_zero[k] = ((s1[k] == 0)? 0xFFFF : 0) & is_zero[k];                
+                are_equal[k] = ((s1[k] == s2[k])? 0xFFFF : 0) & ~is_zero[k];                               
                 score[k] = are_equal[k]? match : mismatch;
                 
                 diag[k] = H_diag[k] + score[k];
-                H_diag[k] = H_left[k];
+                H_diag[k] = H_left[k];              //for the next iteration
                 
-                E_sub[k] = E[k] - gap_extend;        //for now, E is E_up
-                E[k] = H[k] - gap_open;              //for now, H is H_up
+                E_sub[k] = E[k] - gap_extend;       //for now, E is E_up
+                E[k] = H[k] - gap_open;             //for now, H is H_up
                 E[k] = std::max(E[k], E_sub[k]);
 
                 F_sub[k] = F_sub[k] - gap_extend;
@@ -131,28 +117,28 @@ fill_table_16_to_16_i16(int16_t*  __restrict__ flags, int16_t*  __restrict__ seq
                 H[k] = std::max(H[k], (int16_t)0);
                 
                 //logic tests
-                H_gt_0[k] = H[k] > 0;
-                H_eq_E[k] = H[k] == E[k];
-                H_eq_F[k] = H[k] == F[k];
-                H_eq_diag[k] = H[k] == diag[k];
-                H_gt_scores[k] = H[k] > scores[k];
+                H_gt_0[k] = (H[k] > 0)? 0xFFFF : 0;
+                H_eq_E[k] = (H[k] == E[k])? 0xFFFF : 0;
+                H_eq_F[k] = (H[k] == F[k])? 0xFFFF : 0;
+                H_eq_diag[k] = (H[k] == diag[k])? 0xFFFF : 0;
+                H_gt_scores[k] = (H[k] > scores[k])? 0xFFFF : 0;
                 
                 // ********FLAGS********
                 
                 //c_up
-                c_up[k] = E[k] == E_sub[k]; // E[i,j] == E[i,j-1]-gap_extent ?
+                c_up[k] = (E[k] == E_sub[k])? 0xFFFF : 0; // E[i,j] == E[i,j-1]-gap_extent ?
                 flag[k] = c_up[k] & mask1;
-
+                
                 //c_left
-                c_left[k] = F[k] == F_sub[k]; // F[i,j] == F[i-1,j]-gap_extent ?
+                c_left[k] = (F[k] == F_sub[k])? 0xFFFF : 0; // F[i,j] == F[i-1,j]-gap_extent ?
                 flag[k] |= c_left[k] & mask2;
                 
                 //b_up
-                b_up[k] = (H_eq_E[k] || H_eq_diag[k]) && H_gt_0[k];
+                b_up[k] = (H_eq_E[k] | H_eq_diag[k]) & H_gt_0[k];
                 flag[k] |=  b_up[k] & mask4;
                 
                 //b_left
-                b_left[k] = ((H_eq_E[k] && !H_eq_F[k]) || H_eq_diag[k]) && H_gt_0[k];
+                b_left[k] = ((H_eq_F[k] & ~H_eq_E[k]) | H_eq_diag[k]) & H_gt_0[k];
                 flag[k] |= b_left[k] & mask8;
                 
                 ipos[k] = H_gt_scores[k]? i : ipos[k];
@@ -166,16 +152,16 @@ fill_table_16_to_16_i16(int16_t*  __restrict__ flags, int16_t*  __restrict__ seq
     }
 }
 
-
 void smith_waterman(int16_t __restrict__ *seqs1, int16_t __restrict__  *seqs2, 
                     const int16_t match, const int16_t mismatch, 
                     const int16_t gap_open, const int gap_extend, 
                     int16_t __restrict__ *flags, int16_t __restrict__  *scores, 
                     int16_t* __restrict__ ipos, int16_t * __restrict__ jpos, 
-                    int x, int y)
+                    const int x, const int y)
 {
-    fill_table_16_to_16_i16(flags, seqs1, seqs2, x, y,
-                        match, mismatch, gap_open, gap_extend, scores,
-                        ipos, jpos);
+    fill_table_i16(flags, seqs1, seqs2, x, y,
+                   match, mismatch, gap_open, gap_extend, scores,
+                   ipos, jpos);
     
 }
+

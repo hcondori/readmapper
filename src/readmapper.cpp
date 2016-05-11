@@ -1,3 +1,22 @@
+/*
+ Copyright (C) 2016 Héctor Condori Alagón.
+
+ This file is part of readmapper, the massive Smith-Waterman pairwise sequence aligner.
+
+ readmapper is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+
+ readmapper is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+
+ You should have received a copy of the GNU General Public License
+ along with readmapper.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include <algorithm>
 #include <iostream>
 #include <vector>
@@ -67,35 +86,42 @@ int main(int argc, char* argv[])
         int16_t __attribute((aligned(ALNSIZE))) scores[VSIZE];
         int16_t __attribute((aligned(ALNSIZE))) ipos[VSIZE];
         int16_t __attribute((aligned(ALNSIZE))) jpos[VSIZE];
-        bool more_seqs = true;
         
         //alignments
-        char aln1[512];
-        char aln2[512];
+        char aln1[128];
+        char aln2[128];
         
         //max sizes
-        int x, y;
+        int max_x, max_y;
         
-        //
+        //alignment start position
         int x0, y0;
         
         //read one batch
         while(read_seqs(reader1, reader2, &seqs1, &seqs2, seqs1_len, seqs2_len))
         {
-            std::cout << "Hola" << std::endl; 
-            x = *std::max_element(seqs1_len, seqs1_len + VSIZE);
-            y = *std::max_element(seqs2_len, seqs2_len + VSIZE);
-            
+            max_x = *std::max_element(seqs1_len, seqs1_len + VSIZE);
+            max_y = *std::max_element(seqs2_len, seqs2_len + VSIZE);
+            std::cout << "max x=" << max_x << " , max y=" << max_y << std::endl;
+
             smith_waterman(seqs1.data(), seqs2.data(), match, mismatch, gap_open, gap_extend, 
-                           flags.data(), scores, ipos, jpos, x, y);
+                           flags.data(), scores, ipos, jpos, max_x + 1, max_y + 1);
             
             for(int i = 0; i < VSIZE; i++)
             {
-                //sw_backtrack(i, flags.data(), seqs1.data(), seqs2.data(), x, y,
-                    //aln1, aln2, ipos[i], jpos[i], x0, y0);
+                sw_backtrack(i, flags.data(), seqs1.data(), seqs2.data(), max_x+1, max_y+1,
+                    aln1, aln2, ipos[i], jpos[i], x0, y0);
+                if(i==0)
+                {    
+                    std::cout << 
+                        "flag=" << flags[((ipos[i] - 4)*(max_y+1) + jpos[i]-4)*VSIZE] << std::endl;
+                    puts(aln1); puts(aln2);
+                    std::cout << "x=" << ipos[i] << " , y=" << jpos[i] << std::endl;
+                    std::cout << "x0=" << x0 << " , y0=" << y0 << std::endl;
+                }
                 
             }
-            //std::cout << ipos[0] << std::endl;
+            
         }
     }
     return 0;
