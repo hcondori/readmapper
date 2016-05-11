@@ -21,7 +21,7 @@
 
 #include <algorithm>
 
-template <class T>
+template <typename T>
 class Buffer
 {
 private:

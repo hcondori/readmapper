@@ -97,12 +97,10 @@ int main(int argc, char* argv[])
         //alignment start position
         int x0, y0;
         
-        //read one batch
         while(read_seqs(reader1, reader2, &seqs1, &seqs2, seqs1_len, seqs2_len))
         {
             max_x = *std::max_element(seqs1_len, seqs1_len + VSIZE) + 1;
             max_y = *std::max_element(seqs2_len, seqs2_len + VSIZE) + 1;
-            std::cout << "max x=" << max_x << " , max y=" << max_y << std::endl;
 
             smith_waterman(seqs1.data(), seqs2.data(), match, mismatch, gap_open, gap_extend, 
                            flags.data(), scores, ipos, jpos, max_x, max_y);

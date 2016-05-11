@@ -30,6 +30,8 @@
 class FASTAReader
 {
 private:
+    int16_t default_ = 0;
+    
     int16_t* seqs_;
     int maxSeqLength_;
     int numSeqs_;

@@ -100,7 +100,7 @@ bool FASTAReader::next(Buffer<int16_t> *seqs, int *seqs_len, int factor)
     this->vector_size = seqs->size();
     bool status = false;
     //this->seq_length = VSIZE / seq_count;
-    std::fill(seq_sizes.begin(), seq_sizes.end(), 0);
+    std::fill(seq_sizes.begin(), seq_sizes.end(), this->default_);
     seqs->clear();
     for(current_seq = 0; current_seq < VSIZE; current_seq++)
     {

@@ -79,7 +79,7 @@ fill_table_i16(int16_t*  __restrict__ flags, int16_t*  __restrict__ seqs1,
     
     int16_t *sp1 = seqs1;
     int16_t *sp2;
-
+    int16_t ones = 0xFFFF, zeros = 0;
     for(int i = 1; i < x; i++, sp1 += VSIZE)
     {
         sp2 = seqs2;
@@ -93,12 +93,12 @@ fill_table_i16(int16_t*  __restrict__ flags, int16_t*  __restrict__ seqs1,
             std::copy_n(sp2, VSIZE, s2);
             std::copy_n(aH + VSIZE * j, VSIZE, H_left);
             std::copy_n(aF + VSIZE * j, VSIZE, F_sub);
-            #pragma omp simd
+            //#pragma omp simd
             for(int k = 0; k < VSIZE; k++)
             {
-                is_zero[k] = (s2[k] == 0)? 0xFFFF : 0;
-                is_zero[k] = ((s1[k] == 0)? 0xFFFF : 0) & is_zero[k];                
-                are_equal[k] = ((s1[k] == s2[k])? 0xFFFF : 0) & ~is_zero[k];                               
+                is_zero[k] = (s1[k] == 0);
+                are_equal[k] = (s1[k] == s2[k]) && !is_zero[k];
+                
                 score[k] = are_equal[k]? match : mismatch;
                 
                 diag[k] = H_diag[k] + score[k];
@@ -117,29 +117,29 @@ fill_table_i16(int16_t*  __restrict__ flags, int16_t*  __restrict__ seqs1,
                 H[k] = std::max(H[k], (int16_t)0);
                 
                 //logic tests
-                H_gt_0[k] = (H[k] > 0)? 0xFFFF : 0;
-                H_eq_E[k] = (H[k] == E[k])? 0xFFFF : 0;
-                H_eq_F[k] = (H[k] == F[k])? 0xFFFF : 0;
-                H_eq_diag[k] = (H[k] == diag[k])? 0xFFFF : 0;
-                H_gt_scores[k] = (H[k] > scores[k])? 0xFFFF : 0;
+                H_gt_0[k] = H[k] > 0;
+                H_eq_E[k] = H[k] == E[k];
+                H_eq_F[k] = H[k] == F[k];
+                H_eq_diag[k] = H[k] == diag[k];
+                H_gt_scores[k] = H[k] > scores[k];
                 
                 // ********FLAGS********
                 
                 //c_up
-                c_up[k] = (E[k] == E_sub[k])? 0xFFFF : 0; // E[i,j] == E[i,j-1]-gap_extent ?
-                flag[k] = c_up[k] & mask1;
+                c_up[k] = E[k] == E_sub[k]; // E[i,j] == E[i,j-1]-gap_extent ?
+                flag[k] = c_up[k];
                 
                 //c_left
-                c_left[k] = (F[k] == F_sub[k])? 0xFFFF : 0; // F[i,j] == F[i-1,j]-gap_extent ?
-                flag[k] |= c_left[k] & mask2;
+                c_left[k] = F[k] == F_sub[k]; // F[i,j] == F[i-1,j]-gap_extent ?
+                flag[k] |= c_left[k] << 1;
                 
                 //b_up
-                b_up[k] = (H_eq_E[k] | H_eq_diag[k]) & H_gt_0[k];
-                flag[k] |=  b_up[k] & mask4;
+                b_up[k] = (H_eq_E[k] || H_eq_diag[k]) && H_gt_0[k];
+                flag[k] |=  b_up[k] << 2;
                 
                 //b_left
-                b_left[k] = ((H_eq_F[k] & ~H_eq_E[k]) | H_eq_diag[k]) & H_gt_0[k];
-                flag[k] |= b_left[k] & mask8;
+                b_left[k] = ((H_eq_F[k] && !H_eq_E[k]) || H_eq_diag[k]) && H_gt_0[k];
+                flag[k] |= b_left[k] << 3;
                 
                 ipos[k] = H_gt_scores[k]? i : ipos[k];
                 jpos[k] = H_gt_scores[k]? j : jpos[k];
