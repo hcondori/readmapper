@@ -79,7 +79,7 @@ fill_table_i16(int16_t*  __restrict__ flags, int16_t*  __restrict__ seqs1,
     
     int16_t *sp1 = seqs1;
     int16_t *sp2;
-    int16_t ones = 0xFFFF, zeros = 0;
+
     for(int i = 1; i < x; i++, sp1 += VSIZE)
     {
         sp2 = seqs2;
@@ -138,7 +138,7 @@ fill_table_i16(int16_t*  __restrict__ flags, int16_t*  __restrict__ seqs1,
                 flag[k] |=  b_up[k] << 2;
                 
                 //b_left
-                b_left[k] = ((H_eq_F[k] & !H_eq_E[k]) || H_eq_diag[k]) & H_gt_0[k];
+                b_left[k] = ((H_eq_F[k] & !H_eq_E[k]) | H_eq_diag[k]) & H_gt_0[k];
                 flag[k] |= b_left[k] << 3;
                 
                 ipos[k] = H_gt_scores[k]? i : ipos[k];
