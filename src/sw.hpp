@@ -26,4 +26,5 @@ void smith_waterman(int16_t __restrict__ *seqs1, int16_t __restrict__  *seqs2,
                     const int16_t gap_open, const int gap_extend, 
                     int16_t __restrict__ *flags, int16_t __restrict__  *scores, 
                     int16_t* __restrict__ ipos, int16_t * __restrict__ jpos, 
-                    const int x, const int y);
+                    const int x, const int y,
+                    int16_t __restrict__ *aF, int16_t __restrict__ *aH);

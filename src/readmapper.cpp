@@ -38,6 +38,7 @@ bool read_seqs(FASTAReader &reader1, FASTAReader &reader2,
                     int *seqs1_len, int *seqs2_len)
 {
     bool ans;
+    
     #pragma omp critical
     ans = reader1.next(seqs1, seqs1_len) && reader2.next(seqs2, seqs2_len);
     return ans; 
@@ -58,6 +59,9 @@ int main(int argc, char* argv[])
     
     FASTAReader reader1(filename1);
     FASTAReader reader2(filename2);
+    
+    reader1.setDefault(0);
+    reader2.setDefault(1);
     
     //matriz de sustitucion
     int smatrix[]{ 5, -4, -4, -4,
@@ -87,6 +91,13 @@ int main(int argc, char* argv[])
         int16_t __attribute((aligned(ALNSIZE))) ipos[VSIZE];
         int16_t __attribute((aligned(ALNSIZE))) jpos[VSIZE];
         
+        //containers for arrays
+        int16_t inf = gap_open + gap_extend + 1;
+        //int16_t aF[256 * VSIZE] __attribute((aligned(ALNSIZE))) = {(int16_t)(-inf)};
+        //int16_t aH[256 * VSIZE] __attribute((aligned(ALNSIZE))) = {0};
+        Buffer<int16_t> aF(256 * VSIZE, ALNSIZE);
+        Buffer<int16_t> aH(256 * VSIZE, ALNSIZE);
+        
         //alignments
         char aln1[256];
         char aln2[256];
@@ -101,9 +112,10 @@ int main(int argc, char* argv[])
         {
             max_x = *std::max_element(seqs1_len, seqs1_len + VSIZE) + 1;
             max_y = *std::max_element(seqs2_len, seqs2_len + VSIZE) + 1;
-
+            aF.clear(-inf);
+            aH.clear(0);
             smith_waterman(seqs1.data(), seqs2.data(), match, mismatch, gap_open, gap_extend, 
-                           flags.data(), scores, ipos, jpos, max_x, max_y);
+                           flags.data(), scores, ipos, jpos, max_x, max_y, aF.data(), aH.data());
             
             for(int i = 0; i < VSIZE; i++)
             {

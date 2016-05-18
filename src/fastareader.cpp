@@ -101,7 +101,7 @@ bool FASTAReader::next(Buffer<int16_t> *seqs, int *seqs_len, int factor)
     bool status = false;
     //this->seq_length = VSIZE / seq_count;
     std::fill(seq_sizes.begin(), seq_sizes.end(), this->default_);
-    seqs->clear();
+    seqs->clear(default_);
     for(current_seq = 0; current_seq < VSIZE; current_seq++)
     {
         if(accept('>'))
@@ -122,4 +122,9 @@ bool FASTAReader::next(Buffer<int16_t> *seqs, int *seqs_len, int factor)
 bool FASTAReader::next(Buffer<int16_t> *seqs, int *seqs_len)
 {
     return this->next(seqs, seqs_len, 1);
+}
+
+void FASTAReader::setDefault(int value)
+{
+    this->default_ = value;
 }

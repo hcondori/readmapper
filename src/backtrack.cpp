@@ -37,8 +37,8 @@ inplace_reverse (char* str, int len)
  *
  */
 void
-sw_backtrack (int index, int16_t* flags, int16_t* seqs1, int16_t* seqs2, int w, int h,
-              char* aln1, char* aln2, int x, int y, int& x0, int& y0)
+sw_backtrack (int index, int16_t __restrict__ *flags, int16_t* seqs1, int16_t __restrict__ *seqs2, int w, int h,
+              char *aln1, char *aln2, int x, int y, int& x0, int& y0)
 {
     int16_t d_mask  = 0B0000000000001100; //diagonal
     int16_t bl_mask = 0B0000000000001000; //begin left

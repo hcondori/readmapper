@@ -21,7 +21,7 @@
 
 #include <algorithm>
 
-template <class T>
+template <typename T>
 class Buffer
 {
 private:
@@ -63,9 +63,14 @@ public:
         return 0;
     }
     
+    void clear(T pattern)
+    {
+        std::fill_n(this->data_, this->size_, pattern);
+    }
+    
     void clear()
     {
-        std::fill_n(this->data_, this->size_, 0);
+        clear(0);
     }
 
     ~Buffer()

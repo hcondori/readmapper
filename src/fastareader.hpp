@@ -57,6 +57,7 @@ private:
 public:
     FASTAReader(char* filename);
     FASTAReader(std::string filename);
+    void setDefault(int value);
     //int16_t* getSeqs() { return this->seqs_; }
     bool next(Buffer<int16_t> *seqs, int *seqs_len, int factor);
     bool next(Buffer<int16_t> *seqs, int *seqs_len);
