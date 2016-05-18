@@ -47,6 +47,7 @@ fill_table_i16(int16_t*  __restrict__ flags, int16_t*  __restrict__ seqs1,
     int16_t __attribute((aligned(ALNSIZE))) H_left[VSIZE];
     int16_t __attribute((aligned(ALNSIZE))) score[VSIZE];
     
+    
     int16_t __attribute((aligned(ALNSIZE))) flag[VSIZE];
     int16_t __attribute((aligned(ALNSIZE))) c_up[VSIZE];
     int16_t __attribute((aligned(ALNSIZE))) c_left[VSIZE];
@@ -60,6 +61,23 @@ fill_table_i16(int16_t*  __restrict__ flags, int16_t*  __restrict__ seqs1,
     int16_t __attribute((aligned(ALNSIZE))) is_zero[VSIZE];
     int16_t __attribute((aligned(ALNSIZE))) are_equal[VSIZE];
     int16_t __attribute((aligned(ALNSIZE))) H_gt_scores[VSIZE];
+    
+    
+    /*
+    bool __attribute((aligned(ALNSIZE))) flag[VSIZE];
+    bool __attribute((aligned(ALNSIZE))) c_up[VSIZE];
+    bool __attribute((aligned(ALNSIZE))) c_left[VSIZE];
+    bool __attribute((aligned(ALNSIZE))) b_up[VSIZE];
+    bool __attribute((aligned(ALNSIZE))) b_left[VSIZE];
+    bool __attribute((aligned(ALNSIZE))) H_gt_0[VSIZE];
+    bool __attribute((aligned(ALNSIZE))) H_eq_diag[VSIZE];
+    bool __attribute((aligned(ALNSIZE))) H_eq_E[VSIZE];
+    bool __attribute((aligned(ALNSIZE))) H_eq_F[VSIZE];
+    bool __attribute((aligned(ALNSIZE))) H_ne_E[VSIZE];    
+    bool __attribute((aligned(ALNSIZE))) is_zero[VSIZE];
+    bool __attribute((aligned(ALNSIZE))) are_equal[VSIZE];
+    bool __attribute((aligned(ALNSIZE))) H_gt_scores[VSIZE];
+    */
 
     std::fill_n(flags, VSIZE * y, 0);
     std::fill_n(scores, VSIZE, 0);
@@ -92,11 +110,12 @@ fill_table_i16(int16_t*  __restrict__ flags, int16_t*  __restrict__ seqs1,
             #pragma omp simd aligned(ipos, jpos, scores: ALNSIZE)
             for(int k = 0; k < VSIZE; k++)
             {
-                //is_zero[k] = (s1[k] == 0);
-                //are_equal[k] = (s1[k] == s2[k]) & !is_zero[k];
+                //is_zero[k] = s1[k] == 0;
+                //are_equal[k] = !is_zero[k] & (s1[k] == s2[k]);
                 are_equal[k] = s1[k] - s2[k];
                 
                 score[k] = are_equal[k]? mismatch : match;
+                //score[k] = are_equal[k]? match : mismatch;
                 
                 diag[k] = H_diag[k] + score[k];
                 H_diag[k] = H_left[k];              //for the next iteration
