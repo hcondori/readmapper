@@ -61,23 +61,6 @@ fill_table_i16(int16_t*  __restrict__ flags, int16_t*  __restrict__ seqs1,
     int16_t __attribute((aligned(ALNSIZE))) is_zero[VSIZE];
     int16_t __attribute((aligned(ALNSIZE))) are_equal[VSIZE];
     int16_t __attribute((aligned(ALNSIZE))) H_gt_scores[VSIZE];
-    
-    
-    /*
-    bool __attribute((aligned(ALNSIZE))) flag[VSIZE];
-    bool __attribute((aligned(ALNSIZE))) c_up[VSIZE];
-    bool __attribute((aligned(ALNSIZE))) c_left[VSIZE];
-    bool __attribute((aligned(ALNSIZE))) b_up[VSIZE];
-    bool __attribute((aligned(ALNSIZE))) b_left[VSIZE];
-    bool __attribute((aligned(ALNSIZE))) H_gt_0[VSIZE];
-    bool __attribute((aligned(ALNSIZE))) H_eq_diag[VSIZE];
-    bool __attribute((aligned(ALNSIZE))) H_eq_E[VSIZE];
-    bool __attribute((aligned(ALNSIZE))) H_eq_F[VSIZE];
-    bool __attribute((aligned(ALNSIZE))) H_ne_E[VSIZE];    
-    bool __attribute((aligned(ALNSIZE))) is_zero[VSIZE];
-    bool __attribute((aligned(ALNSIZE))) are_equal[VSIZE];
-    bool __attribute((aligned(ALNSIZE))) H_gt_scores[VSIZE];
-    */
 
     std::fill_n(flags, VSIZE * y, 0);
     std::fill_n(scores, VSIZE, 0);
@@ -94,6 +77,7 @@ fill_table_i16(int16_t*  __restrict__ flags, int16_t*  __restrict__ seqs1,
     int16_t *sp1 = seqs1;
     int16_t *sp2;
 
+    #pragma unroll(4)
     for(int i = 1; i < x; i++, sp1 += VSIZE)
     {
         sp2 = seqs2;
@@ -102,6 +86,7 @@ fill_table_i16(int16_t*  __restrict__ flags, int16_t*  __restrict__ seqs1,
         std::fill_n(H_diag, VSIZE, 0);
         std::fill_n(H, VSIZE, 0);
         std::fill_n(flags + VSIZE * i * y, VSIZE, 0);
+        #pragma unroll(4)
         for (int j = 1; j < y; j++, sp2 += VSIZE)
         {
             std::copy_n(sp2, VSIZE, s2);
@@ -133,11 +118,13 @@ fill_table_i16(int16_t*  __restrict__ flags, int16_t*  __restrict__ seqs1,
                 H[k] = std::max(H[k], (int16_t)0);
                 
                 //logic tests
-                H_gt_0[k] = H[k] > 0;
+		//H_gt_0[k] = H[k] > 0;
+                H_gt_0[k] = (-H[k] & (int16_t)(0X80000000)) >> 15;
                 H_eq_E[k] = H[k] == E[k];
                 H_eq_F[k] = H[k] == F[k];
                 H_eq_diag[k] = H[k] == diag[k];
-                H_gt_scores[k] = H[k] > scores[k];
+		//H_gt_scores[k] = H[k] > socres[k];
+                H_gt_scores[k] = (scores[k] - H[k]) & (int16_t)(0X80000000) >> 15;
                 
                 // ********FLAGS********
                 
@@ -168,6 +155,92 @@ fill_table_i16(int16_t*  __restrict__ flags, int16_t*  __restrict__ seqs1,
     }
 }
 
+
+/*
+ * Smith-Waterman with match/mismatch values with E, F, H tables
+ */
+void
+fill_table_i16_2(int16_t*  __restrict__ flags, int16_t*  __restrict__ seqs1, 
+		 int16_t*  __restrict__ seqs2, const int x, const int y,
+		 const int16_t match, const int16_t mismatch, const int16_t gap_open,
+		 const int16_t gap_extend, int16_t*  __restrict__ scores,
+		 int16_t*  __restrict__ ipos, int16_t*  __restrict__ jpos,
+		 int16_t __restrict__ *E, int16_t __restrict__ *F,
+		 int16_t __restrict__ *H)
+{
+    int16_t __attribute((aligned(ALNSIZE))) s1[VSIZE];
+    int16_t __attribute((aligned(ALNSIZE))) s2[VSIZE];
+
+    int16_t __attribute((aligned(ALNSIZE))) score[VSIZE];
+ 
+    int16_t __attribute((aligned(ALNSIZE))) is_zero[VSIZE];
+    int16_t __attribute((aligned(ALNSIZE))) are_equal[VSIZE];
+    int16_t __attribute((aligned(ALNSIZE))) H_gt_scores[VSIZE];
+    
+    std::fill_n(flags, VSIZE * y, 0);
+    std::fill_n(scores, VSIZE, 0);
+    std::fill_n(ipos, VSIZE, 0);
+    std::fill_n(jpos, VSIZE, 0);
+    
+    int16_t inf = gap_open + gap_extend + 1;
+    
+    int16_t *sp1 = seqs1;
+    int16_t *sp2;
+
+    int current = VSIZE * (y + 1);
+    int diagonal = 0;
+    int up = VSIZE * y;
+    int left = VSIZE;
+    
+    #pragma unroll(4)
+    for(int i = 1; i < x; i++, sp1 += VSIZE)
+    {
+	current += VSIZE;
+	diagonal += VSIZE;
+	up += VSIZE;
+	left += VSIZE;
+	
+        sp2 = seqs2;
+        std::copy_n(sp1, VSIZE, s1);
+        #pragma unroll(4)
+        for (int j = 1; j < y; j++, sp2 += VSIZE)
+        {
+            std::copy_n(sp2, VSIZE, s2);
+	    #pragma omp simd aligned(ipos, jpos, scores, E, F, H: ALNSIZE)
+            for(int k = 0; k < VSIZE; k++)
+            {
+                //is_zero[k] = s1[k] == 0;
+                //are_equal[k] = !is_zero[k] & (s1[k] == s2[k]);
+                are_equal[k] = s1[k] - s2[k];
+                
+                score[k] = are_equal[k]? mismatch : match;
+                
+                E[current + k] = std::max(E[left + k] - gap_extend,
+					  H[left + k] - gap_open);
+
+                F[current + k] = std::max(F[up + k] - gap_extend,
+					  H[up + k] - gap_open);
+                
+                H[current + k] = std::max(E[current + k], F[current + k]);
+                H[current + k] = std::max(H[current + k], (int16_t)(H[diagonal + k] + score[k]));
+                H[current + k] = std::max(H[current + k], (int16_t)0);
+                
+                H_gt_scores[k] = H[current + k] > scores[k];
+                
+                
+                ipos[k] = H_gt_scores[k]? i : ipos[k];
+                jpos[k] = H_gt_scores[k]? j : jpos[k];
+                scores[k] = std::max(H[k], scores[k]);
+            }
+            current += VSIZE;
+	    diagonal += VSIZE;
+	    up += VSIZE;
+	    left += VSIZE;
+        }
+    }
+}
+
+
 void smith_waterman(int16_t __restrict__ *seqs1, int16_t __restrict__  *seqs2, 
                     const int16_t match, const int16_t mismatch, 
                     const int16_t gap_open, const int gap_extend, 
@@ -179,6 +252,21 @@ void smith_waterman(int16_t __restrict__ *seqs1, int16_t __restrict__  *seqs2,
     fill_table_i16(flags, seqs1, seqs2, x, y,
                    match, mismatch, gap_open, gap_extend, scores,
                    ipos, jpos, aF, aH);
+    
+}
+
+void smith_waterman_2(int16_t __restrict__ *seqs1, int16_t __restrict__  *seqs2, 
+		      const int16_t match, const int16_t mismatch, 
+		      const int16_t gap_open, const int gap_extend, 
+		      int16_t __restrict__ *flags, int16_t __restrict__  *scores, 
+		      int16_t* __restrict__ ipos, int16_t * __restrict__ jpos, 
+		      const int x, const int y, 
+		      int16_t __restrict__ *E, int16_t __restrict__ *F,
+		      int16_t __restrict__ *H)
+{
+    fill_table_i16_2(flags, seqs1, seqs2, x, y,
+                   match, mismatch, gap_open, gap_extend, scores,
+		     ipos, jpos, E, F, H);
     
 }
 

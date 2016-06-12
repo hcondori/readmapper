@@ -28,3 +28,14 @@ void smith_waterman(int16_t __restrict__ *seqs1, int16_t __restrict__  *seqs2,
                     int16_t* __restrict__ ipos, int16_t * __restrict__ jpos, 
                     const int x, const int y,
                     int16_t __restrict__ *aF, int16_t __restrict__ *aH);
+
+
+void smith_waterman_2(int16_t __restrict__ *seqs1, int16_t __restrict__  *seqs2, 
+		      const int16_t match, const int16_t mismatch, 
+		      const int16_t gap_open, const int gap_extend, 
+		      int16_t __restrict__ *flags, int16_t __restrict__  *scores, 
+		      int16_t* __restrict__ ipos, int16_t * __restrict__ jpos, 
+		      const int x, const int y, 
+		      int16_t __restrict__ *E, int16_t __restrict__ *F,
+		      int16_t __restrict__ *H);
+    

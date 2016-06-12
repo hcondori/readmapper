@@ -95,8 +95,12 @@ int main(int argc, char* argv[])
         int16_t inf = gap_open + gap_extend + 1;
         //int16_t aF[256 * VSIZE] __attribute((aligned(ALNSIZE))) = {(int16_t)(-inf)};
         //int16_t aH[256 * VSIZE] __attribute((aligned(ALNSIZE))) = {0};
-        Buffer<int16_t> aF(256 * VSIZE, ALNSIZE);
-        Buffer<int16_t> aH(256 * VSIZE, ALNSIZE);
+
+	int bsize =128 * VSIZE;
+	
+	//Buffer<int16_t> E(bsize, ALNSIZE);
+        Buffer<int16_t> F(bsize, ALNSIZE);
+        Buffer<int16_t> H(bsize, ALNSIZE);
         
         //alignments
         char aln1[256];
@@ -112,10 +116,12 @@ int main(int argc, char* argv[])
         {
             max_x = *std::max_element(seqs1_len, seqs1_len + VSIZE) + 1;
             max_y = *std::max_element(seqs2_len, seqs2_len + VSIZE) + 1;
-            aF.clear(-inf);
-            aH.clear(0);
+            //E.clear(-inf);
+	    F.clear(-inf);
+            H.clear(0);
+	    
             smith_waterman(seqs1.data(), seqs2.data(), match, mismatch, gap_open, gap_extend, 
-                           flags.data(), scores, ipos, jpos, max_x, max_y, aF.data(), aH.data());
+			     flags.data(), scores, ipos, jpos, max_x, max_y, F.data(), H.data());
             
             for(int i = 0; i < VSIZE; i++)
             {
