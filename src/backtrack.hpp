@@ -23,6 +23,6 @@
 #include <cstdint>
 
 void
-sw_backtrack (int index, int16_t* flags, int16_t* seqs1, int16_t* seqs2, int w, int h,
+sw_backtrack (int index, int8_t* flags, int16_t* seqs1, int16_t* seqs2, int w, int h,
               char* aln1, char* aln2, int x, int y, int& x0, int& y0);
 

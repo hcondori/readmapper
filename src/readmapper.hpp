@@ -19,9 +19,9 @@
 
 #pragma once
 
-#define VSIZE 64
+#define VSIZE 16
 
-#define ALNSIZE 32
+#define ALNSIZE 16
 
 #define DEFAULT_SEQ_LEN 256
 

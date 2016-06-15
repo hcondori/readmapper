@@ -86,7 +86,7 @@ int main(int argc, char* argv[])
         int seqs2_len[VSIZE];
         
         //containter for flags
-        Buffer<int16_t> flags(seq_len * seq_len * VSIZE, ALNSIZE);
+        Buffer<int8_t> flags(seq_len * seq_len * VSIZE, ALNSIZE);
         int16_t __attribute((aligned(ALNSIZE))) scores[VSIZE];
         int16_t __attribute((aligned(ALNSIZE))) ipos[VSIZE];
         int16_t __attribute((aligned(ALNSIZE))) jpos[VSIZE];
@@ -96,11 +96,12 @@ int main(int argc, char* argv[])
         //int16_t aF[256 * VSIZE] __attribute((aligned(ALNSIZE))) = {(int16_t)(-inf)};
         //int16_t aH[256 * VSIZE] __attribute((aligned(ALNSIZE))) = {0};
 
-	int bsize =128 * VSIZE;
+	int bsize = 128 * VSIZE;
 	
 	//Buffer<int16_t> E(bsize, ALNSIZE);
         Buffer<int16_t> F(bsize, ALNSIZE);
         Buffer<int16_t> H(bsize, ALNSIZE);
+	//int16_t __attribute((aligned(ALNSIZE))) H[128 * VSIZE];
         
         //alignments
         char aln1[256];
@@ -119,12 +120,16 @@ int main(int argc, char* argv[])
             //E.clear(-inf);
 	    F.clear(-inf);
             H.clear(0);
+	    //flags.clear(0);
 	    
             smith_waterman(seqs1.data(), seqs2.data(), match, mismatch, gap_open, gap_extend, 
-			     flags.data(), scores, ipos, jpos, max_x, max_y, F.data(), H.data());
+			   flags.data(), scores, ipos, jpos, max_x, max_y, F.data(), H.data());
             
             for(int i = 0; i < VSIZE; i++)
             {
+		std::cout << scores[i] << std::endl;
+		std::cout << ipos[i] << std::endl;
+		std::cout << jpos[i] << std::endl;
                 sw_backtrack(i, flags.data(), seqs1.data(), seqs2.data(), max_x, max_y,
                     aln1, aln2, ipos[i], jpos[i], x0, y0);
                     puts(aln1);
