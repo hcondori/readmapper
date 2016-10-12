@@ -22,12 +22,15 @@
 #include <vector>
 #include <omp.h>
 
+#include <cstdio>
+
 #include "readmapper.hpp"
 
 #include "backtrack.hpp"
 #include "buffer.hpp"
 #include "fastareader.hpp"
 #include "sw.hpp"
+#include "printer.hpp"
 
 
 /*
@@ -35,12 +38,15 @@
 */
 bool read_seqs(FASTAReader &reader1, FASTAReader &reader2, 
                     Buffer<int16_t> *seqs1, Buffer<int16_t> *seqs2,
-                    int *seqs1_len, int *seqs2_len)
+                    int *seqs1_len, int *seqs2_len, 
+                    std::vector<std::string> *seqs1_ids,
+                    std::vector<std::string> *seqs2_ids)
 {
     bool ans;
     
     #pragma omp critical
-    ans = reader1.next(seqs1, seqs1_len) && reader2.next(seqs2, seqs2_len);
+    ans = reader1.next(seqs1, seqs1_len, seqs1_ids) && 
+        reader2.next(seqs2, seqs2_len, seqs2_ids);
     return ans; 
 }
 
@@ -81,6 +87,12 @@ int main(int argc, char* argv[])
         Buffer<int16_t> seqs1(seq_len * VSIZE, ALNSIZE);
         Buffer<int16_t> seqs2(seq_len * VSIZE, ALNSIZE);
         
+        //containers for ids
+        std::vector<std::string> seqs1_ids(VSIZE);
+        std::vector<std::string> seqs2_ids(VSIZE);
+        
+        
+        
         //legths of sequences
         int seqs1_len[VSIZE];
         int seqs2_len[VSIZE];
@@ -96,12 +108,12 @@ int main(int argc, char* argv[])
         //int16_t aF[256 * VSIZE] __attribute((aligned(ALNSIZE))) = {(int16_t)(-inf)};
         //int16_t aH[256 * VSIZE] __attribute((aligned(ALNSIZE))) = {0};
 
-	int bsize = 128 * VSIZE;
+        int bsize = 128 * VSIZE;
 	
-	//Buffer<int16_t> E(bsize, ALNSIZE);
+        //Buffer<int16_t> E(bsize, ALNSIZE);
         Buffer<int16_t> F(bsize, ALNSIZE);
         Buffer<int16_t> H(bsize, ALNSIZE);
-	//int16_t __attribute((aligned(ALNSIZE))) H[128 * VSIZE];
+        //int16_t __attribute((aligned(ALNSIZE))) H[128 * VSIZE];
         
         //alignments
         char aln1[256];
@@ -113,29 +125,31 @@ int main(int argc, char* argv[])
         //alignment start position
         int x0, y0;
         
-        while(read_seqs(reader1, reader2, &seqs1, &seqs2, seqs1_len, seqs2_len))
+        while(read_seqs(reader1, reader2, &seqs1, &seqs2, seqs1_len, seqs2_len, 
+              &seqs1_ids, &seqs2_ids))
         {
             max_x = *std::max_element(seqs1_len, seqs1_len + VSIZE) + 1;
             max_y = *std::max_element(seqs2_len, seqs2_len + VSIZE) + 1;
             //E.clear(-inf);
-	    F.clear(-inf);
+            F.clear(-inf);
             H.clear(0);
-	    //flags.clear(0);
+            //flags.clear(0);
 	    
             smith_waterman(seqs1.data(), seqs2.data(), match, mismatch, gap_open, gap_extend, 
 			   flags.data(), scores, ipos, jpos, max_x, max_y, F.data(), H.data());
             
             for(int i = 0; i < VSIZE; i++)
             {
-		std::cout << scores[i] << std::endl;
-		std::cout << ipos[i] << std::endl;
-		std::cout << jpos[i] << std::endl;
+                //std::cout << scores[i] << std::endl;
+                //std::cout << ipos[i] << std::endl;
+                //std::cout << jpos[i] << std::endl;
                 sw_backtrack(i, flags.data(), seqs1.data(), seqs2.data(), max_x, max_y,
                     aln1, aln2, ipos[i], jpos[i], x0, y0);
-                    puts(aln1);
-                    puts(aln2);
+                //puts(aln1);
+                //puts(aln2);
+                print_alignment (stdout, seqs1_ids, seqs2_ids, scores, 
+                    aln1, aln2, strlen(aln1), i);
             }
-            
         }
     }
     return 0;

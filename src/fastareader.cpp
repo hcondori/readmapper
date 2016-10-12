@@ -45,6 +45,12 @@ void FASTAReader::add_char(char ch)
     current = fgetc_unlocked(file_);
 }
 
+void FASTAReader::add_char_to_id(char ch)
+{
+    (*this->seqs_ids)[current_seq].push_back(ch);
+    current = fgetc_unlocked(file_);
+}
+
 bool FASTAReader::accept(char ch)
 {
     if(current == ch)
@@ -75,7 +81,8 @@ bool FASTAReader::acceptPrintable()
         if(!inheader)
             add_char(current);
         else
-            current = fgetc_unlocked(file_);
+            add_char_to_id(current);
+            //current = fgetc_unlocked(file_);
         return true;
     }
     return false;
@@ -94,8 +101,15 @@ bool FASTAReader::acceptPrintableBut(char ch)
     return false;
 }
 
-bool FASTAReader::next(Buffer<int16_t> *seqs, int *seqs_len, int factor)
+bool FASTAReader::next(Buffer<int16_t> *seqs, int *seqs_len, 
+                       std::vector<std::string> *ids, int factor)
 {
+    this->seqs_ids = ids;
+    
+    
+    for(std::string &id : (*seqs_ids))
+        id.clear();
+        
     this->seqs = seqs;
     this->vector_size = seqs->size();
     bool status = false;
@@ -107,7 +121,7 @@ bool FASTAReader::next(Buffer<int16_t> *seqs, int *seqs_len, int factor)
         if(accept('>'))
         {
             inheader = true;
-            while(acceptPrintable());     
+            while(acceptPrintable());
             acceptSpace();
             inheader = false;
             while(acceptPrintableBut('>') || acceptSpace());
@@ -119,9 +133,10 @@ bool FASTAReader::next(Buffer<int16_t> *seqs, int *seqs_len, int factor)
     return status;
 }
 
-bool FASTAReader::next(Buffer<int16_t> *seqs, int *seqs_len)
+bool FASTAReader::next(Buffer<int16_t> *seqs, int *seqs_len,
+                       std::vector<std::string> *ids)
 {
-    return this->next(seqs, seqs_len, 1);
+    return this->next(seqs, seqs_len, ids, 1);
 }
 
 void FASTAReader::setDefault(int value)

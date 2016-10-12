@@ -37,6 +37,7 @@ private:
     int numSeqs_;
     
     Buffer<int16_t> *seqs;
+    std::vector<std::string> *seqs_ids;
     
     int vector_size;
     
@@ -50,6 +51,7 @@ private:
     bool inheader;
     
     void add_char(char ch);
+    void add_char_to_id(char ch);
     bool accept(char ch);
     bool acceptSpace();
     bool acceptPrintable();
@@ -59,6 +61,7 @@ public:
     FASTAReader(std::string filename);
     void setDefault(int value);
     //int16_t* getSeqs() { return this->seqs_; }
-    bool next(Buffer<int16_t> *seqs, int *seqs_len, int factor);
-    bool next(Buffer<int16_t> *seqs, int *seqs_len);
+    bool next(Buffer<int16_t> *seqs, int *seqs_len, std::vector<std::string> *ids, int factor);
+    bool next(Buffer<int16_t> *seqs, int *seqs_len, std::vector<std::string> *ids);
 };
+
